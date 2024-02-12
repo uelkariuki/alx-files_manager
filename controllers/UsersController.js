@@ -1,13 +1,14 @@
+const crypto = require('crypto');
 const client = require('../utils/db');
 
 exports.postNew = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email) {
-    res.status(400).send({ error: 'Missing email' });
+    return res.status(400).send({ error: 'Missing email' });
   }
   if (!password) {
-    res.status(400).send({ error: 'Missing password' });
+    return res.status(400).send({ error: 'Missing password' });
   }
 
   // hashing the password using SHA1
@@ -22,7 +23,7 @@ exports.postNew = async (req, res) => {
       .collection('users')
       .findOne({ email });
     if (userExists) {
-      res.status(400).send({ error: 'Already exist' });
+      return res.status(400).send({ error: 'Already exist' });
     }
     // if user does not exist insert a new user with hashed password
     const user = await client.dbClient.db

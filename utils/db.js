@@ -8,8 +8,18 @@ class DBClient {
     this.client = new MongoClient(`mongodb://${this.host}:${this.port}`, {
       useUnifiedTopology: true,
     });
-    this.client.connect();
-    this.db = this.client.db(this.database);
+    // this.client.connect();
+    this.connect();
+  }
+
+  async connect() {
+    try {
+      await this.client.connect();
+      this.db = this.client.db(this.database);
+    } catch (err) {
+      console.error(err);
+      process.exit(1);
+    }
   }
 
   isAlive() {
