@@ -1,3 +1,6 @@
+import redisClient from '../utils/redis';
+import dbClient from '../utils/db';
+
 const crypto = require('crypto');
 const client = require('../utils/db');
 
