@@ -36,3 +36,23 @@ exports.postNew = async (req, res) => {
     return res.status(500);
   }
 };
+
+exports.getMe = async (request, response) => {
+  const { userId } = request;
+
+  const token = request.headers['x-token'];
+  if (!token) {
+    return response.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const redisToken = await redisClient.get(`auth_${token}`);
+  if (!redisToken) return response.status(401).send({ error: 'Unauthorized' });
+
+  const user = await dbClient.users.find(`ObjectId("${userId}")`).toArray();
+  if (!user) return response.status(401).send({ error: 'Unauthorized' });
+
+  const processedUser = { id: user._id, ...user };
+  delete processedUser._id;
+  delete processedUser.password;
+  return response.status(200).send(processedUser);
+};
