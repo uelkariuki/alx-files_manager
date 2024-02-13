@@ -26,11 +26,13 @@ exports.postNew = async (req, res) => {
       return res.status(400).send({ error: 'Already exist' });
     }
     // if user does not exist insert a new user with hashed password
-    const user = await client.dbClient.db
+    const result = await client.dbClient.db
       .collection('users')
       .insertOne({ email, password: hashedPassword });
-    return res.status(201).json(user.ops[0]);
+    const user = result.ops[0];
+    return res.status(201).json({ id: user._id, email });
   } catch (err) {
     console.error(err);
+    return res.status(500);
   }
 };
