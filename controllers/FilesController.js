@@ -6,7 +6,6 @@ import redisClient from '../utils/redis';
 const { v4: uuidv4 } = require('uuid');
 // const path = require('path');
 const client = require('../utils/db');
-const fileQueue = require('../worker');
 
 export const postUpload = async (req, res) => {
   // retrieve the user based on the token
