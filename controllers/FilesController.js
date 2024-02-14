@@ -1,16 +1,15 @@
 import fs from 'fs';
 import { ObjectId } from 'mongodb';
-import dbClient from '../utils/db';
-
 import redisClient from '../utils/redis';
 
-const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+const client = require('../utils/db');
 
 exports.postUpload = async (req, res) => {
   // retrieve the user based on the token
   const token = req.headers['x-token'];
-  const user = await dbClient.db.collection('users').findOne({ token });
+  const user = await client.dbClient.db.collection('users').findOne({ token });
 
   // If not found, return an error Unauthorized with a status code 401
   if (!user) {
@@ -33,7 +32,7 @@ exports.postUpload = async (req, res) => {
     return res.status(400).send({ error: 'Missing data' });
   }
   if (parentId !== '0') {
-    const parent = await dbClient.db
+    const parent = await client.dbClient.db
       .collection('files')
       .findOne({ _id: ObjectId(parentId) });
     if (!parent) {
@@ -58,7 +57,7 @@ exports.postUpload = async (req, res) => {
   }
 
   //  create a new file in DB
-  const result = await dbClient.db.collection('files').insertOne({
+  const result = await client.dbClient.db.collection('files').insertOne({
     userId: ObjectId(user._id),
     name,
     type,
@@ -80,7 +79,7 @@ exports.postUpload = async (req, res) => {
 exports.putPublish = async (req, res) => {
   // Retrieve the user based on token
   const token = req.headers['x-token'];
-  const user = await dbClient.db.collection('users').findOne({ token });
+  const user = await client.dbClient.db.collection('users').findOne({ token });
 
   if (!user) {
     return res.status(401).send({ error: 'Unauthorized' });
@@ -88,7 +87,7 @@ exports.putPublish = async (req, res) => {
   // extract id from req parameters
   const fileId = req.params.id;
   // find file doc linked to user and the ID passed as parameter
-  const file = await dbClient.db
+  const file = await client.dbClient.db
     .collection('files')
     .findOne({ _id: ObjectId(fileId), userId: ObjectId(user._id) });
 
@@ -96,12 +95,12 @@ exports.putPublish = async (req, res) => {
     return res.status(404).send({ error: 'Not found' });
   }
   // update isPublic to true
-  await dbClient.db
+  await client.dbClient.db
     .collection('files')
     .updateOne({ _id: ObjectId(fileId) }, { $set: { isPublic: true } });
 
   // return updated file doc with status code 200
-  const updatedFile = await dbClient.db
+  const updatedFile = await client.dbClient.db
     .collection('files')
     .findOne({ _id: ObjectId(fileId) });
   return res.status(200).json(updatedFile);
@@ -110,7 +109,7 @@ exports.putPublish = async (req, res) => {
 exports.putUnpublish = async (req, res) => {
   // Retrieve the user based on token
   const token = req.headers['x-token'];
-  const user = await dbClient.db.collection('users').findOne({ token });
+  const user = await client.dbClient.db.collection('users').findOne({ token });
 
   if (!user) {
     return res.status(401).send({ error: 'Unauthorized' });
@@ -118,7 +117,7 @@ exports.putUnpublish = async (req, res) => {
   // extract id from req parameters
   const fileId = req.params.id;
   // find file doc linked to user and the ID passed as parameter
-  const file = await dbClient.db
+  const file = await client.dbClient.db
     .collection('files')
     .findOne({ _id: ObjectId(fileId), userId: ObjectId(user._id) });
 
@@ -126,12 +125,12 @@ exports.putUnpublish = async (req, res) => {
     return res.status(404).send({ error: 'Not found' });
   }
   // update isPublic to false
-  await dbClient.db
+  await client.dbClient.db
     .collection('files')
     .updateOne({ _id: ObjectId(fileId) }, { $set: { isPublic: false } });
 
   // return updated file doc with status code 200
-  const updatedFile = await dbClient.db
+  const updatedFile = await client.dbClient.db
     .collection('files')
     .findOne({ _id: ObjectId(fileId) });
   return res.status(200).json(updatedFile);
@@ -142,11 +141,11 @@ exports.getShow = async (request, response) => {
   if (!token) { return response.status(401).json({ error: 'Unauthorized' }); }
   const keyID = await redisClient.get(`auth_${token}`);
   if (!keyID) { return response.status(401).json({ error: 'Unauthorized' }); }
-  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(keyID) });
+  const user = await client.dbClient.db.collection('users').findOne({ _id: ObjectId(keyID) });
   if (!user) { return response.status(401).json({ error: 'Unauthorized' }); }
 
   const idFile = request.params.id || '';
-  const fileDocument = await dbClient.db
+  const fileDocument = await client.dbClient.db
     .collection('files')
     .findOne({ _id: ObjectId(idFile), userId: user._id });
   if (!fileDocument) return response.status(404).send({ error: 'Not found' });
@@ -168,7 +167,7 @@ exports.getIndex = async (request, response) => {
   if (!keyID) { return response.status(401).json({ error: 'Unauthorized' }); }
   const parentId = request.query.parentId || '0';
   const pagination = request.query.page || 0;
-  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(keyID) });
+  const user = await client.dbClient.db.collection('users').findOne({ _id: ObjectId(keyID) });
   if (!user) response.status(401).json({ error: 'Unauthorized' });
 
   const aggregationMatch = { $and: [{ parentId }] };
@@ -179,7 +178,7 @@ exports.getIndex = async (request, response) => {
   ];
   if (parentId === 0) aggregateData = [{ $skip: pagination * 20 }, { $limit: 20 }];
 
-  const files = await dbClient.db
+  const files = await client.dbClient.db
     .collection('files')
     .aggregate(aggregateData);
   const filesArray = [];
