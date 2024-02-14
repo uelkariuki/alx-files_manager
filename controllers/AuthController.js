@@ -17,8 +17,8 @@ class AuthController {
     const sha1Password = sha1(password);
 
     // Find the user associate to this email and with this password
-    const finishedCreds = { email, password: sha1Password };
-    const user = await client.dbClient.users.findOne(finishedCreds);
+    // const finishedCreds = { email, password: sha1Password };
+    const user = await client.dbClient.db.collection('users').findOne({ email, password: sha1Password });
     if (!user) return response.status(401).send({ error: 'Unauthorized' });
 
     const token = uuidv4();
