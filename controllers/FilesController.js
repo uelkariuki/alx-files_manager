@@ -52,13 +52,25 @@ exports.postUpload = async (req, res) => {
     localPath: type !== 'folder' ? filePath : undefined,
   };
   if (type !== 'folder') {
-    await fsPromises.writeFile(filePath, Buffer.from(data, 'base64'));
+    try {
+      await fsPromises.writeFile(filePath, Buffer.from(data, 'base64'));
+    } catch (error) {
+      console.error(`Error writing file: ${filePath}`, error);
+    }
   }
   //   save the file doc in the database
   const result = await dbClient.db.collection('files').insertOne(newFile);
-  newFile._id = result.insertedId;
+  newFile.id = result.insertedId.toString();
 
-  return res.status(201).json(newFile);
+  return res.status(201).json({
+    id: newFile.id,
+    userId: newFile.userId,
+    name: newFile.name,
+    type: newFile.type,
+    parentId: newFile.parentId,
+    isPublic: newFile.isPublic,
+    localPath: newFile.localPath,
+  });
 };
 
 exports.putPublish = async (req, res) => {
