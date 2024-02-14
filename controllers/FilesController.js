@@ -7,7 +7,7 @@ const dbClient = require('../utils/db');
 
 exports.postUpload = async (req, res) => {
   // retrieve the user based on the token
-  const token = req.headers['X-token'];
+  const token = req.headers['x-token'];
   const userId = await redisClient.get(`auth_${token}`);
 
   // If not found, return an error Unauthorized with a status code 401
