@@ -173,7 +173,7 @@ exports.getIndex = async (request, response) => {
     { $skip: pagination * 20 },
     { $limit: 20 },
   ];
-  if (parentId === 0) aggregateData = [{ $skip: pagination * 20 }, { $limit: 20 }];
+  if (parentId === '0') aggregateData = [{ $skip: pagination * 20 }, { $limit: 20 }];
 
   const files = await dbClient.db
     .collection('files')
