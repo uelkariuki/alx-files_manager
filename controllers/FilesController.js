@@ -142,13 +142,13 @@ exports.getShow = async (request, response) => {
   if (!token) { return response.status(401).json({ error: 'Unauthorized' }); }
   const keyID = await redisClient.get(`auth_${token}`);
   if (!keyID) { return response.status(401).json({ error: 'Unauthorized' }); }
-  const user = await dbClient.db.collection('users').findOne({ _id: ObjectID(keyID) });
+  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(keyID) });
   if (!user) { return response.status(401).json({ error: 'Unauthorized' }); }
 
   const idFile = request.params.id || '';
   const fileDocument = await dbClient.db
     .collection('files')
-    .findOne({ _id: ObjectID(idFile), userId: user._id });
+    .findOne({ _id: ObjectId(idFile), userId: user._id });
   if (!fileDocument) return response.status(404).send({ error: 'Not found' });
 
   return response.send({
@@ -168,7 +168,7 @@ exports.getIndex = async (request, response) => {
   if (!keyID) { return response.status(401).json({ error: 'Unauthorized' }); }
   const parentId = request.query.parentId || '0';
   const pagination = request.query.page || 0;
-  const user = await dbClient.db.collection('users').findOne({ _id: ObjectID(keyID) });
+  const user = await dbClient.db.collection('users').findOne({ _id: ObjectId(keyID) });
   if (!user) response.status(401).json({ error: 'Unauthorized' });
 
   const aggregationMatch = { $and: [{ parentId }] };
