@@ -1,5 +1,4 @@
 import redisClient from '../utils/redis';
-import dbClient from '../utils/db';
 
 const crypto = require('crypto');
 const client = require('../utils/db');
@@ -51,7 +50,7 @@ exports.getMe = async (request, response) => {
   const redisToken = await redisClient.get(`auth_${token}`);
   if (!redisToken) return response.status(401).send({ error: 'Unauthorized' });
 
-  const user = await dbClient.users.find(`ObjectId("${userId}")`).toArray();
+  const user = await client.dbClient.users.find(`ObjectId("${userId}")`).toArray();
   if (!user) return response.status(401).send({ error: 'Unauthorized' });
 
   const processedUser = { id: user._id, ...user };
