@@ -74,33 +74,40 @@ exports.postUpload = async (req, res) => {
 };
 
 exports.putPublish = async (req, res) => {
-  // Retrieve the user based on token
-  const token = req.headers['x-token'];
-  const user = await dbClient.db.collection('users').findOne({ token });
+  try {
+    // Retrieve the user based on token
+    const token = req.headers['x-token'];
+    const user = await dbClient.db.collection('users').findOne({ token });
 
-  if (!user) {
-    return res.status(401).send({ error: 'Unauthorized' });
+    if (!user) {
+      return res.status(401).send({ error: 'Unauthorized' });
+    }
+    // extract id from req parameters
+    const fileId = req.params.id;
+    const idObject = new ObjectId(fileId);
+
+    // find file doc linked to user and the ID passed as parameter
+    const file = await dbClient.db
+      .collection('files')
+      .findOne({ _id: idObject, userId: user._id });
+
+    if (!file) {
+      return res.status(404).send({ error: 'Not found' });
+    }
+    // update isPublic to true
+    await dbClient.db
+      .collection('files')
+      .updateOne({ _id: ObjectId(fileId) }, { $set: { isPublic: true } });
+
+    // return updated file doc with status code 200
+    const updatedFile = await dbClient.db
+      .collection('files')
+      .findOne({ _id: idObject });
+    return res.status(200).json(updatedFile);
+  } catch (error) {
+    console.error('Error in putPublish:', error);
+    return res.status(500);
   }
-  // extract id from req parameters
-  const fileId = req.params.id;
-  // find file doc linked to user and the ID passed as parameter
-  const file = await dbClient.db
-    .collection('files')
-    .findOne({ _id: ObjectId(fileId), userId: ObjectId(user._id) });
-
-  if (!file) {
-    return res.status(404).send({ error: 'Not found' });
-  }
-  // update isPublic to true
-  await dbClient.db
-    .collection('files')
-    .updateOne({ _id: ObjectId(fileId) }, { $set: { isPublic: true } });
-
-  // return updated file doc with status code 200
-  const updatedFile = await dbClient.db
-    .collection('files')
-    .findOne({ _id: ObjectId(fileId) });
-  return res.status(200).json(updatedFile);
 };
 
 exports.putUnpublish = async (req, res) => {
