@@ -1,6 +1,9 @@
 import redisClient from '../utils/redis';
 
 const crypto = require('crypto');
+const Queue = require('bull');
+
+const userQueue = new Queue('fileQueue');
 const dbClient = require('../utils/db');
 
 exports.postNew = async (req, res) => {
@@ -32,6 +35,10 @@ exports.postNew = async (req, res) => {
       .collection('users')
       .insertOne({ email, password: hashedPassword });
     const user = result.ops[0];
+
+    userQueue.add({
+      userId: user._id,
+    });
     return res.status(201).json({ id: user._id, email });
   } catch (err) {
     console.error(err);

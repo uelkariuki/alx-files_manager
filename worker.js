@@ -5,6 +5,7 @@ const imageThumbnail = require('image-thumbnail');
 const fsPromises = require('fs').promises;
 
 const fileQueue = new Queue('fileQueue');
+const userQueue = new Queue('userQueue');
 const dbClient = require('./utils/db');
 
 fileQueue.process(async (job) => {
@@ -30,4 +31,19 @@ fileQueue.process(async (job) => {
     }));
 
   await Promise.all(promises);
+});
+
+userQueue.process(async (job) => {
+  const { userId } = job.data;
+
+  if (!userId) {
+    throw new Error('Missing userId');
+  }
+  const user = await dbClient.db
+    .collection('users')
+    .findOne({ _id: ObjectId(userId) });
+  if (!user) {
+    throw new Error('User not found');
+  }
+  console.log(`Welcome ${user.email}!`);
 });
