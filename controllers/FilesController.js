@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
-import { promises as fsPromises } from 'fs';
+import { promises as fsPromises, readFileSync } from 'fs';
 import { ObjectId } from 'mongodb';
+import mime from 'mime-types';
 import redisClient from '../utils/redis';
 
 const Queue = require('bull');
@@ -237,15 +238,36 @@ exports.getIndex = async (request, response) => {
 };
 
 exports.getFile = async (req, res) => {
+  const fileId = req.params.id || '';
+  const size = req.query.size || 0;
 
-  //   const { size } = req.query;
-  //   let filePath = file.localPath;
+  const file = await dbClient.files.findOne({ _id: ObjectId(fileId) });
+  if (!file) return res.status(404).send({ error: 'Not found' });
 
-  //   if (size) {
-  //     filePath = `${filePath}_${size}`;
-  //   }
+  const { isPublic } = file;
+  const { userId } = file;
+  const { type } = file;
+  let user = null;
 
-//   if (!fs.existsSync(filePath)) {
-//     return res.status(404).send({ error: 'Not found' });
-//   }
+  const token = req.header('X-Token') || null;
+  if (token) {
+    const redisToken = await redisClient.get(`auth_${token}`);
+    if (redisToken) {
+      user = await dbClient.db.collection('users').findOne({ _id: ObjectId(redisToken) });
+    }
+  }
+
+  if ((!isPublic && !user) || (user && userId.toString() !== user && !isPublic)) return res.status(404).send({ error: 'Not found' });
+  if (type === 'folder') return res.status(400).send({ error: 'A folder doesn\'t have content' });
+
+  const path = size === 0 ? file.localPath : `${file.localPath}_${size}`;
+
+  try {
+    const fileData = readFileSync(path);
+    const mimeType = mime.contentType(file.name);
+    res.setHeader('Content-Type', mimeType);
+    return res.status(200).send(fileData);
+  } catch (err) {
+    return res.status(404).send({ error: 'Not found' });
+  }
 };
