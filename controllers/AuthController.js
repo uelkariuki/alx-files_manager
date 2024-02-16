@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import sha1 from 'sha1';
 import redisClient from '../utils/redis';
 
-const client = require('../utils/db');
+const dbClient = require('../utils/db');
 
 class AuthController {
   static async getConnect(request, response) {
@@ -18,7 +18,7 @@ class AuthController {
 
     // Find the user associate to this email and with this password
     // const finishedCreds = { email, password: sha1Password };
-    const user = await client.dbClient.db.collection('users').findOne({ email, password: sha1Password });
+    const user = await dbClient.db.collection('users').findOne({ email, password: sha1Password });
     if (!user) return response.status(401).send({ error: 'Unauthorized' });
 
     const token = uuidv4();
@@ -31,12 +31,18 @@ class AuthController {
   }
 
   static async getDisconnect(request, response) {
-    const token = request.headers['x-token'];
-    const user = await redisClient.get(`auth_${token}`);
-    if (!user) return response.status(401).send({ error: 'Unauthorized' });
+    try {
+      await dbClient.connect();
+      const token = request.headers['x-token'];
+      const user = await redisClient.get(`auth_${token}`);
+      if (!user) return response.status(401).send({ error: 'Unauthorized' });
 
-    await redisClient.del(`auth_${token}`);
-    return response.status(204).end();
+      await redisClient.del(`auth_${token}`);
+      return response.status(204).end();
+    } catch (error) {
+      console.error('Error connecting to MongoDB:', error);
+      return response.status(500).send({ error: 'Internal Server error' });
+    }
   }
 }
 
