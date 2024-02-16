@@ -1,8 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import sha1 from 'sha1';
 import redisClient from '../utils/redis';
-
-const client = require('../utils/db');
+import dbClient from '../utils/db';
 
 class AuthController {
   static async getConnect(request, response) {
@@ -17,8 +16,7 @@ class AuthController {
     const sha1Password = sha1(password);
 
     // Find the user associate to this email and with this password
-    // const finishedCreds = { email, password: sha1Password };
-    const user = await client.dbClient.db.collection('users').findOne({ email, password: sha1Password });
+    const user = await dbClient.users.findOne({ email, password: sha1Password });
     if (!user) return response.status(401).send({ error: 'Unauthorized' });
 
     const token = uuidv4();
