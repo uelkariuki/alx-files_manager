@@ -1,6 +1,11 @@
+/* eslint-disable no-unused-vars */
 import { promises as fsPromises } from 'fs';
 import { ObjectId } from 'mongodb';
 import redisClient from '../utils/redis';
+
+const Queue = require('bull');
+
+const fileQueue = new Queue('fileQueue');
 
 const { v4: uuidv4 } = require('uuid');
 const dbClient = require('../utils/db');
@@ -59,6 +64,13 @@ exports.postUpload = async (req, res) => {
     } catch (error) {
       console.error(`Error writing file: ${filePath}`, error);
     }
+  }
+  // start a background processing for generating thumbnails for a file of type image
+  if (type === 'image') {
+    fileQueue.add({
+      userId: newFile.userId,
+      fileId: newFile.id,
+    });
   }
   //   save the file doc in the database
   const result = await dbClient.db.collection('files').insertOne(newFile);
@@ -222,4 +234,18 @@ exports.getIndex = async (request, response) => {
   });
 
   return response.send(filesArray);
+};
+
+exports.getFile = async (req, res) => {
+
+  //   const { size } = req.query;
+  //   let filePath = file.localPath;
+
+  //   if (size) {
+  //     filePath = `${filePath}_${size}`;
+  //   }
+
+//   if (!fs.existsSync(filePath)) {
+//     return res.status(404).send({ error: 'Not found' });
+//   }
 };
